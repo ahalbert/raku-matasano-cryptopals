@@ -2,18 +2,20 @@ use Inline::Python;
 use Base64;
 use S1C1;
 use S1C5;
+use S2C9;
 
 
+my $BLOCKSIZE = 16;
 #No module for raku. We're using python
 my $py = Inline::Python.new();
 $py.run('import S1C7');
 
 our sub AES_ECB_Encrypt(Buf $text, Buf $key) {
-  $py.call('S1C7', 'decrypt_aes_128_ecb', $text, $key);
+  $py.call('S1C7', 'aes_ecb_encrypt', pkcs7pad($text, $BLOCKSIZE), $key);
 }
 
-our sub AES_ECB_decrypt(Buf $text, Buf $key) {
-  $py.call('S1C7', 'aes_ecb_encrypt', $text, $key);
+our sub AES_ECB_Decrypt(Buf $text, Buf $key) {
+  $py.call('S1C7', 'decrypt_aes_128_ecb', $text, $key);
 }
 
 sub MAIN() {

@@ -7,56 +7,61 @@ use S1C5;
 
 my $key = generateAESKey();
 my $BLOCKSIZE = 16;
-my $secret = asciiToBuf("hello");
-#my $unknownString = decode-base64("", :bin);
 
-sub unknownStringECBEncrypt(Buf $plaintext is copy) {
-  my $text = pkcs7pad($plaintext ~ $secret, $BLOCKSIZE);
-  AES_ECB_Encrypt($text, $key);
-}
+my $secret = decode-base64("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK", :bin);
 
-sub getBlockLength() {
-  my $text = Buf.new();
-  my $ciphertext = unknownStringECBEncrypt($text);
-  my $empty_len = $ciphertext.bytes;
-  my $len = $empty_len;
-  while $empty_len == $len {
-    $text.push: 'A'.ord;
-    $ciphertext = unknownStringECBEncrypt($text);
-    $len = $ciphertext.bytes;
+say $secret.decode;
+class ECBOracle {
+  has Buf $.secret;
+  has Buf $.key;
+  has Int $.blocksize;
+
+  method unknownStringECBEncrypt(Buf $plaintext) {
+    my $text = pkcs7pad($plaintext ~ $!secret, $BLOCKSIZE);
+    AES_ECB_Encrypt($text, $!key);
   }
-  $len - $empty_len;
+
+  method getBlockLength() {
+    my $text = Buf.new();
+    my $ciphertext = self.unknownStringECBEncrypt($text);
+    my $empty_len = $ciphertext.bytes;
+    my $len = $empty_len;
+    while $empty_len == $len {
+      $text.push: 'A'.ord;
+      $ciphertext = self.unknownStringECBEncrypt($text);
+      $len = $ciphertext.bytes;
+    }
+    $!blocksize = ($len - $empty_len);
+    $.blocksize;
+  }
+
+  method decryptByte(Buf $decryptedString) {
+    my $testlength = ($.blocksize - (1 + $decryptedString.bytes)) % $.blocksize;
+    my $prefix = asciiToBuf("A" x $testlength);
+    my $realcipher = self.unknownStringECBEncrypt($prefix);
+    my $len = $testlength + $decryptedString.bytes;
+    for (0..255).map: { Buf.new($_) } {
+      my $result = self.unknownStringECBEncrypt($prefix ~ $decryptedString ~ $_);
+      return $_ if $result[0..$len].List eqv $realcipher[0..$len].List;
+    }
+    Buf.new();
+  }
+
+  method decryptUnknownString() {
+    my Buf $decryptedString = Buf.new;
+    for 1..$secret.bytes {
+      my $result = self.decryptByte($decryptedString);
+      $decryptedString.push: $result if $result.defined;
+    }
+    $decryptedString;
+  }
 }
 
-sub decryptByte(Buf $decryptedString) {
-  say $decryptedString;
-  my $testlength = ($BLOCKSIZE - (1 + $decryptedString.bytes)) % $BLOCKSIZE;
-  my $prefix = asciiToBuf("A" x $testlength);
-  my $realcipher = unknownStringECBEncrypt($prefix);
-  my $len = $testlength + $decryptedString.bytes;
-  for (0..255).map: { Buf.new($_) } {
-    my $result = unknownStringECBEncrypt($prefix ~ $decryptedString ~ $_);
-    return $_ if $result[0..$len].List eqv $realcipher[0..$len].List;
-  }
-    say $realcipher;
-}
 
-sub decryptUnknownString() {
-  my Buf $decryptedString = Buf.new;
-  for 1..$secret.bytes {
-    say "--";
-    say $_;
-    my $result = decryptByte($decryptedString);
-    $decryptedString.push: $result if $result.defined;
-    say $decryptedString.decode;
-  }
-  $decryptedString;
-}
 
 sub MAIN() {
-  my $plaintext = generateAESKey();
-  my $ciphertext = unknownStringECBEncrypt(Buf.new());
-  say getBlockLength();
-  say decryptUnknownString().decode;
+  my $oracle = ECBOracle.new( key => $key, secret => $secret);
+  say $oracle.getBlockLength();
+  say $oracle.decryptUnknownString().decode;
   
 }

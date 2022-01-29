@@ -7,6 +7,8 @@ use S2C9;
 #No module for raku. We're using python
 my $py = Inline::Python.new();
 $py.run('import AES');
+# my $encrypted_block = $py.call('AES', 'encrypt_aes_128_ecb', $block_to_encrypt, $key);
+# my $decrypted_block =  $py.call('AES', 'decrypt_aes_128_ecb', $_, $key);
 
 my $BLOCKSIZE=16;
 
