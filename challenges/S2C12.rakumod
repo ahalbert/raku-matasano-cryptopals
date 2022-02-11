@@ -1,7 +1,7 @@
 use Base64;
 use S2C9;
 use S2C11;
-use S1C7;
+use AES;
 use S1C5;
 
 
@@ -37,7 +37,9 @@ class ECBOracle {
 
   method decryptByte(Buf $decryptedString) {
     my $testlength = ($.blocksize - (1 + $decryptedString.bytes)) % $.blocksize;
+    say $decryptedString.bytes;
     my $prefix = asciiToBuf("A" x $testlength);
+    say $prefix;
     my $realcipher = self.unknownStringECBEncrypt($prefix);
     my $len = $testlength + $decryptedString.bytes;
     for (0..255).map: { Buf.new($_) } {

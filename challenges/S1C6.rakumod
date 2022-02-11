@@ -40,7 +40,6 @@ sub getCandidateKeySizes(Buf $ciphertext) returns Hash {
 }
 
 sub transposeCiphertext (Buf $ciphertext, Int $keysize) {
-  say $keysize;
   my @ciphertextBits = $ciphertext;
   my @result;
   for 0..$keysize-1 {
@@ -72,4 +71,5 @@ sub leftpad(Str $val is copy, Str $pad, Int $len) is export {
 sub MAIN () {
   say hammingDistance(asciiToBuf("this is a test"), asciiToBuf("wokka wokka!!!"));
   my %hash  = repeatingKeyXORSolver(decode-base64("6.txt".IO.slurp, :bin));
+  dd %hash;
 }

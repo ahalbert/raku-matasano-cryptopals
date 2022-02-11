@@ -1,8 +1,7 @@
-use Inline::Python;
-use Base64;
-use S1C1;
-use S1C5;
 use S2C9;
+use Base64;
+use S1C5;
+use Inline::Python;
 
 
 my $BLOCKSIZE = 16;
